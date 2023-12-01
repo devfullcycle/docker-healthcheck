@@ -1,0 +1,37 @@
+version: "3"
+
+services:
+  
+  app:
+    build: 
+      context: ./app
+    container_name: app
+    volumes:
+      - ./app:/usr/src/app
+    entrypoint: sh -c "npm install && npm run dev"
+#    entrypoint: sh -c "tail -f /dev/null"
+    ports:
+      - 3000:3000
+    depends_on:
+      database:
+        condition: service_healthy
+
+  database:
+    build: 
+      context: ./database
+    container_name: database
+    volumes:
+      - mysql:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      - MYSQL_DATABASE=nodedb
+      - MYSQL_ROOT_PASSWORD=root
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 10s
+      retries: 3
+    
+volumes:
+  mysql:
+    driver: local
